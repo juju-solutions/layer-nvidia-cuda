@@ -57,10 +57,25 @@ function install_cuda() {
     export LD_LIBRARY_PATH="/usr/local/cuda/lib64:/usr/local/cuda/lib:/usr/local/nvidia/lib:/usr/local/nvidia/lib64:${LD_LIBRARY_PATH}"
     echo "LD_LIBRARY_PATH=${LD_LIBRARY_PATH}" | tee -a /etc/environments
 
-    juju-reboot
+    echo "export PATH=\"/usr/local/cuda/bin:${PATH}\"" | tee -a /home/ubuntu/.bashrc
+    echo "export LD_LIBRARY_PATH=\"/usr/local/cuda/lib64:/usr/local/cuda/lib:/usr/local/nvidia/lib:/usr/local/nvidia/lib64:${LD_LIBRARY_PATH}\"" | tee -a /home/ubuntu/.bashrc
 
     charms.reactive set_state 'cuda.installed'
+
 }
 
+@when 'cuda.installed'
+@when_not 'cuda.available'
+function reboot() {
+
+    juju-reboot
+
+    export PATH="/usr/local/cuda/bin:${PATH}"
+    echo "PATH=${PATH}" | tee /etc/environments
+    export LD_LIBRARY_PATH="/usr/local/cuda/lib64:/usr/local/cuda/lib:/usr/local/nvidia/lib:/usr/local/nvidia/lib64:${LD_LIBRARY_PATH}"
+    echo "LD_LIBRARY_PATH=${LD_LIBRARY_PATH}" | tee -a /etc/environments
+
+    charms.reactive set_state 'cuda.available'
+}
 
 reactive_handler_main
