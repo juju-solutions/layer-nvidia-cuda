@@ -5,11 +5,13 @@ source charms.reactive.sh
 
 @when_not 'cuda.installed'
 function install_cuda() {
+    status-set maintenance "Installing CUDA"
     juju-log "Testing presence of CUDA compliant device"
     local SUPPORT_CUDA="$(lspci -nnk | grep -iA2 NVIDIA | wc -l)"
 
     if [ "${SUPPORT_CUDA}" = "0" ]; then
         juju-log "This instance does not run an nVidia GPU. Exiting with error"
+        status-set error "This charm requires an nVidia GPU"
         exit 1
     fi
 
@@ -29,7 +31,7 @@ function install_cuda() {
     apt-get update -yqq && apt-get upgrade -yqq
 
     juju-log "Installing CUDA"
-    apt-get install -yqq build-essential linux-image-extra-virtual
+    apt-get install -yqq build-essential linux-image-extra-virtual linux-image-extra-`uname -r`
 
     apt-get update && apt-get install -y --no-install-recommends --force-yes \
         cuda-nvrtc-$CUDA_PKG_VERSION \
@@ -43,10 +45,10 @@ function install_cuda() {
         cuda && \
         ln -s cuda-$CUDA_VERSION /usr/local/cuda
 
-        juju-log "Configuring libraries"
+    juju-log "Configuring libraries"
     echo "/usr/local/cuda/lib" >> /etc/ld.so.conf.d/cuda.conf && \
-        echo "/usr/local/cuda/lib64" >> /etc/ld.so.conf.d/cuda.conf && \
-        ldconfig
+    echo "/usr/local/cuda/lib64" >> /etc/ld.so.conf.d/cuda.conf && \
+    ldconfig
 
     echo "/usr/local/nvidia/lib" >> /etc/ld.so.conf.d/nvidia.conf && \
         echo "/usr/local/nvidia/lib64" >> /etc/ld.so.conf.d/nvidia.conf && \
@@ -60,8 +62,8 @@ function install_cuda() {
     echo "export PATH=\"/usr/local/cuda/bin:${PATH}\"" | tee -a /home/ubuntu/.bashrc
     echo "export LD_LIBRARY_PATH=\"/usr/local/cuda/lib64:/usr/local/cuda/lib:/usr/local/nvidia/lib:/usr/local/nvidia/lib64:${LD_LIBRARY_PATH}\"" | tee -a /home/ubuntu/.bashrc
 
+    status-set waiting "Waiting for reboot"
     charms.reactive set_state 'cuda.installed'
-
 }
 
 @when 'cuda.installed'
@@ -75,6 +77,7 @@ function reboot() {
     export LD_LIBRARY_PATH="/usr/local/cuda/lib64:/usr/local/cuda/lib:/usr/local/nvidia/lib:/usr/local/nvidia/lib64:${LD_LIBRARY_PATH}"
     echo "LD_LIBRARY_PATH=${LD_LIBRARY_PATH}" | tee -a /etc/environments
 
+    status-set active "CUDA drivers installed and available"
     charms.reactive set_state 'cuda.available'
 }
 
