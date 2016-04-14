@@ -17,6 +17,7 @@ function install_cuda() {
 
     juju-log "Creating program variables"
     CUDA_VERSION="7.5"
+    CUDA_SUB_VERSION="18"
     CUDA_PKG_VERSION="7-5"
 
     juju-log "Installing common dependencies"
@@ -43,24 +44,22 @@ function install_cuda() {
 
             apt-get update -qq && \
             apt-get install -yqq --no-install-recommends --force-yes \
-                cuda-nvrtc-$CUDA_PKG_VERSION \
-                cuda-cusolver-$CUDA_PKG_VERSION \
-                cuda-cublas-$CUDA_PKG_VERSION \
-                cuda-cufft-$CUDA_PKG_VERSION \
-                cuda-curand-$CUDA_PKG_VERSION \
-                cuda-cusparse-$CUDA_PKG_VERSION \
-                cuda-npp-$CUDA_PKG_VERSION \
-                cuda-cudart-$CUDA_PKG_VERSION \
+                cuda-nvrtc-${CUDA_PKG_VERSION} \
+                cuda-cusolver-${CUDA_PKG_VERSION} \
+                cuda-cublas-${CUDA_PKG_VERSION} \
+                cuda-cufft-${CUDA_PKG_VERSION} \
+                cuda-curand-${CUDA_PKG_VERSION} \
+                cuda-cusparse-${CUDA_PKG_VERSION} \
+                cuda-npp-${CUDA_PKG_VERSION} \
+                cuda-cudart-${CUDA_PKG_VERSION} \
                 cuda
-            
-            ln -sf "/usr/local/cuda-$CUDA_VERSION" "/usr/local/cuda"
         ;;
         "ppc64le" ) 
             MD5="af735cee83d5c80f0b7b1f84146b4614"
-            wget -c -P /tmp "http://developer.download.nvidia.com/compute/cuda/${CUDA_VERSION}/Prod/local_installers/cuda-repo-ubuntu1404-7-5-local_7.5-18_ppc64el.deb"
+            wget -c -P /tmp "http://developer.download.nvidia.com/compute/cuda/${CUDA_VERSION}/Prod/local_installers/cuda-repo-ubuntu1404-${CUDA_PKG_VERSION}-local_${CUDA_VERSION}-${CUDA_SUB_VERSION}_$(arch).deb"
 
             # Install CUDA dependencies manually
-            apt-get install \
+            apt-get install -yqq \
                 openjdk-8-jre openjdk-8-jre-headless java-common \
                 ca-certificates default-jre-headless fonts-dejavu-extra \
                 freeglut3 freeglut3-dev \
@@ -76,27 +75,44 @@ function install_cuda() {
                 x11proto-kb-dev x11proto-xext-dev x11proto-xf86vidmode-dev x11proto-input-dev \
                 xorg-sgml-doctools xtrans-dev libgles2-mesa-dev \
                 lksctp-tools mesa-common-dev build-essential \
+                libopenblas-base libopenblas-dev
 
-            # TBD
+            dpkg -i /tmp/cuda-repo-ubuntu1404-${CUDA_PKG_VERSION}-local_${CUDA_VERSION}-${CUDA_SUB_VERSION}_$(arch).deb
+            # What this does is really copy all packages from CUDA into /var/cuda-repo-7-5-local
+            for PACKAGE in cuda-core cuda-toolkit cuda cuda-nvrtc cuda-cusolver cuda-cublas cuda-cufft cuda-curand cuda-cusparse cuda-npp cuda-cudart
+            do
+                dpkg -i /var/cuda-repo-${CUDA_PKG_VERSION}-local/${PACKAGE}-${CUDA_PKG_VERSION}_${CUDA_VERSION}-${CUDA_SUB_VERSION}_$(arch).deb
+            done
+
+            dpkg -i /var/cuda-repo-${CUDA_PKG_VERSION}-local/nvidia-352_352.39-0ubuntu1_$(arch).deb
 
         ;;
     esac
 
+    ln -sf "/usr/local/cuda-$CUDA_VERSION" "/usr/local/cuda"
+
     juju-log "Configuring libraries"
-    echo "/usr/local/cuda/lib" > /etc/ld.so.conf.d/cuda.conf && \
-        echo "/usr/local/cuda/lib64" >> /etc/ld.so.conf.d/cuda.conf && \
+    cat >> /etc/ld.so.conf.d/cuda.conf << EOF
+/usr/local/cuda/lib
+/usr/local/cuda/lib64
+EOF
+
+    cat >> /etc/ld.so.conf.d/nvidia.conf << EOF
+/usr/local/nvidia/lib
+/usr/local/nvidia/lib64
+EOF
+
         ldconfig
 
-    echo "/usr/local/nvidia/lib" > /etc/ld.so.conf.d/nvidia.conf && \
-        echo "/usr/local/nvidia/lib64" >> /etc/ld.so.conf.d/nvidia.conf && \
-        ldconfig
+    cat >> /etc/profile.d/cuda.sh << EOF
+export PATH=/usr/local/cuda/bin:${PATH}
+export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}
+EOF
 
-    echo 'export PATH=/usr/local/cuda/bin:${PATH}' | tee /etc/profile.d/cuda.sh
-    echo "export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}" | tee -a /etc/profile.d/cuda.sh
     chmod +x /etc/profile.d/cuda.sh
 
-    echo "export PATH=\"/usr/local/cuda/bin:${PATH}\"" | tee -a /home/ubuntu/.bashrc
-    echo "export LD_LIBRARY_PATH=\"/usr/local/cuda/lib64:/usr/local/cuda/lib:/usr/local/nvidia/lib:/usr/local/nvidia/lib64:${LD_LIBRARY_PATH}\"" | tee -a /home/ubuntu/.bashrc
+    echo "export PATH=\"/usr/local/cuda/bin:${PATH}\"" | tee -a ${HOME}/.bashrc
+    echo "export LD_LIBRARY_PATH=\"/usr/local/cuda/lib64:/usr/local/cuda/lib:/usr/local/nvidia/lib:/usr/local/nvidia/lib64:${LD_LIBRARY_PATH}\"" | tee -a ${HOME}/.bashrc
 
     export PATH="/usr/local/cuda/bin:${PATH}"
     export LD_LIBRARY_PATH="/usr/local/cuda/lib64:/usr/local/cuda/lib:/usr/local/nvidia/lib:/usr/local/nvidia/lib64:${LD_LIBRARY_PATH}"
