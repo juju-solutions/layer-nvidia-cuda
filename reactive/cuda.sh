@@ -88,7 +88,7 @@ function install_cuda() {
                 cd /mnt/openblas
                 make && make PREFIX=/usr install
 
-            dpkg -i /tmp/cuda-repo-ubuntu1404-${CUDA_PKG_VERSION}-local_${CUDA_VERSION}-${CUDA_SUB_VERSION}_$(arch).deb
+            dpkg -i /tmp/cuda-repo-ubuntu1404-7-5-local_7.5-18_ppc64el.deb
             # What this does is really copy all packages from CUDA into /var/cuda-repo-7-5-local
             for PACKAGE in cuda-core cuda-toolkit cuda cuda-nvrtc cuda-cusolver cuda-cublas cuda-cufft cuda-curand cuda-cusparse cuda-npp cuda-cudart
             do
