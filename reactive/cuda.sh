@@ -63,6 +63,11 @@ function install_cuda() {
             [ -c /dev/nvidia0 ] || { wget -C /tmp http://us.download.nvidia.com/Ubuntu/352.88/NVIDIA-Linux-ppc64le-352.88.run ; \
             /tmp/NVIDIA-Linux-ppc64le-352.88.run -a --update -q -s --disable-nouveau ; }
 
+            apt-add-repository -y ppa:openjdk-r/ppa
+            apt-add-repository -y ppa:jochenkemnade/openjdk-8
+
+            apt-get update -yqq
+
             # Install CUDA dependencies manually
             apt-get install -yqq \
                 openjdk-8-jre openjdk-8-jre-headless java-common \
