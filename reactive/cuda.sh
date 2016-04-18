@@ -58,7 +58,7 @@ function install_cuda() {
         ;;
         "ppc64le" ) 
             MD5="af735cee83d5c80f0b7b1f84146b4614"
-            wget -c -P /tmp "http://developer.download.nvidia.com/compute/cuda/${CUDA_VERSION}/Prod/local_installers/cuda-repo-ubuntu1404-${CUDA_PKG_VERSION}-local_${CUDA_VERSION}-${CUDA_SUB_VERSION}_$(arch).deb"
+            wget -c -P /tmp "http://developer.download.nvidia.com/compute/cuda/7.5/Prod/local_installers/cuda-repo-ubuntu1404-7-5-local_7.5-18_ppc64el.deb"
 
             [ -c /dev/nvidia0 ] || { wget -C /tmp http://us.download.nvidia.com/Ubuntu/352.88/NVIDIA-Linux-ppc64le-352.88.run ; \
             /tmp/NVIDIA-Linux-ppc64le-352.88.run -a --update -q -s --disable-nouveau ; }
