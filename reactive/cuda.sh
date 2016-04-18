@@ -84,7 +84,7 @@ function install_cuda() {
                 x11proto-core-dev x11proto-damage-dev x11proto-dri2-dev x11proto-fixes-dev x11proto-gl-dev \
                 x11proto-kb-dev x11proto-xext-dev x11proto-xf86vidmode-dev x11proto-input-dev \
                 xorg-sgml-doctools xtrans-dev libgles2-mesa-dev \
-                lksctp-tools mesa-common-dev build-essential \
+                lksctp-tools mesa-common-dev build-essential
 
             [ -d "/mnt/openblas" ] \
                 || git clone https://github.com/xianyi/OpenBLAS.git /mnt/openblas \
