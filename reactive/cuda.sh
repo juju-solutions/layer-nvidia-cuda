@@ -60,8 +60,12 @@ function install_cuda() {
             MD5="af735cee83d5c80f0b7b1f84146b4614"
             wget -c -P /tmp "http://developer.download.nvidia.com/compute/cuda/7.5/Prod/local_installers/cuda-repo-ubuntu1404-7-5-local_7.5-18_ppc64el.deb"
 
-            [ -c /dev/nvidia0 ] || { wget -C /tmp http://us.download.nvidia.com/Ubuntu/352.88/NVIDIA-Linux-ppc64le-352.88.run ; \
-            /tmp/NVIDIA-Linux-ppc64le-352.88.run -a --update -q -s --disable-nouveau ; }
+            wget -c http://us.download.nvidia.com/Ubuntu/352.88/NVIDIA-Linux-ppc64le-352.88.run -P /tmp
+            chmod +x /tmp/NVIDIA-Linux-ppc64le-352.88.run
+            /tmp/NVIDIA-Linux-ppc64le-352.88.run -a --update -q -s --disable-nouveau \
+                || /tmp/NVIDIA-Linux-ppc64le-352.88.run -a -q -s --disable-nouveau \
+                || { juju-log "OK, not installing drivers"; 
+
 
             apt-add-repository -y ppa:openjdk-r/ppa
             apt-add-repository -y ppa:jochenkemnade/openjdk-8
@@ -94,11 +98,16 @@ function install_cuda() {
 
             dpkg -i /tmp/cuda-repo-ubuntu1404-7-5-local_7.5-18_ppc64el.deb
             # What this does is really copy all packages from CUDA into /var/cuda-repo-7-5-local
-            for PACKAGE in cuda-core cuda-toolkit cuda cuda-nvrtc cuda-cusolver cuda-cublas cuda-cufft cuda-curand cuda-cusparse cuda-npp cuda-cudart
+            for PACKAGE in cuda-license cuda-misc-headers cuda-core cuda-cudart cuda-driver-dev cuda-cudart-dev cuda-command-line-tools \
+                cuda-nvrtc cuda-cusolver cuda-cublas cuda-cufft cuda-curand cuda-cusparse cuda-npp \
+                cuda-nvrtc-dev cuda-cusolver-dev cuda-cublas-dev cuda-cufft-dev cuda-curand-dev cuda-cusparse-dev cuda-npp-dev \
+                cuda-samples cudata-documentation cuda-visual-tools cuda-toolkit
+
             do
                 dpkg -i /var/cuda-repo-${CUDA_PKG_VERSION}-local/${PACKAGE}-${CUDA_PKG_VERSION}_${CUDA_VERSION}-${CUDA_SUB_VERSION}_$(arch).deb
             done
 
+            # Note: this doesn't cover the installation of the CUDA driver on the host. Another charm? 
             # dpkg -i /var/cuda-repo-${CUDA_PKG_VERSION}-local/nvidia-352_352.39-0ubuntu1_$(arch).deb
 
         ;;
