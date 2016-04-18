@@ -60,8 +60,8 @@ function install_cuda() {
             MD5="af735cee83d5c80f0b7b1f84146b4614"
             wget -c -P /tmp "http://developer.download.nvidia.com/compute/cuda/${CUDA_VERSION}/Prod/local_installers/cuda-repo-ubuntu1404-${CUDA_PKG_VERSION}-local_${CUDA_VERSION}-${CUDA_SUB_VERSION}_$(arch).deb"
 
-            wget -C /tmp http://us.download.nvidia.com/Ubuntu/352.88/NVIDIA-Linux-ppc64le-352.88.run
-            /tmp/NVIDIA-Linux-ppc64le-352.88.run -a --update -q -s --disable-nouveau
+            [ -c /dev/nvidia0 ] || { wget -C /tmp http://us.download.nvidia.com/Ubuntu/352.88/NVIDIA-Linux-ppc64le-352.88.run ; \
+            /tmp/NVIDIA-Linux-ppc64le-352.88.run -a --update -q -s --disable-nouveau ; }
 
             # Install CUDA dependencies manually
             apt-get install -yqq \
@@ -87,7 +87,7 @@ function install_cuda() {
                 && { cd "/mnt/openblas" ; git pull origin master ; cd - ; }
                 cd /mnt/openblas
                 make && make PREFIX=/usr install
-            
+
             dpkg -i /tmp/cuda-repo-ubuntu1404-${CUDA_PKG_VERSION}-local_${CUDA_VERSION}-${CUDA_SUB_VERSION}_$(arch).deb
             # What this does is really copy all packages from CUDA into /var/cuda-repo-7-5-local
             for PACKAGE in cuda-core cuda-toolkit cuda cuda-nvrtc cuda-cusolver cuda-cublas cuda-cufft cuda-curand cuda-cusparse cuda-npp cuda-cudart
