@@ -63,7 +63,7 @@ function trusty::x86_64::install_openblas() {
     apt-get update -qq 
     apt-get install -yqq --force-yes --no-install-recommends \
         libopenblas-base \
-        libopenblas-dev \
+        libopenblas-dev
 }
 
 function xenial::ppc64le::install_openblas() { 
