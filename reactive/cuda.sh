@@ -67,9 +67,11 @@ function trusty::x86_64::install_openblas() {
 }
 
 function xenial::ppc64le::install_openblas() { 
+    echo "Not planned yet"
 }
 
 function xenial::x86_64::install_openblas() { 
+    echo "Not planned yet"
 }
 
 #####################################################################
@@ -139,10 +141,12 @@ function trusty::x86_64::install_cuda() {
 }
 
 function xenial::ppc64le::install_cuda() { 
+    echo "Not planned yet"
 
 }
 
 function xenial::x86_64::install_cuda() { 
+    echo "Not planned yet"
 
 }
 
