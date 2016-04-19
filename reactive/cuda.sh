@@ -30,7 +30,7 @@ function install_cuda() {
 
 
     apt-get update -yqq && apt-get upgrade -yqq
-    apt-get install -yqq build-essential linux-image-extra-virtual linux-image-extra-`uname -r`
+    apt-get install -yqq build-essential linux-image-extra-`uname -r`
 
     case "$(arch)" in 
         "x86_64" ) 
