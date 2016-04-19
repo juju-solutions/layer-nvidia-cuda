@@ -89,7 +89,7 @@ function install_cuda() {
                     chmod +x /tmp/NVIDIA-Linux-ppc64le-352.88.run
                     /tmp/NVIDIA-Linux-ppc64le-352.88.run -a --update -q -s --disable-nouveau \
                         || /tmp/NVIDIA-Linux-ppc64le-352.88.run -a -q -s --disable-nouveau \
-                        || { juju-log "OK, not installing drivers"; 
+                        || { juju-log "OK, not installing drivers"; }
 
 
                     apt-add-repository -y ppa:openjdk-r/ppa
@@ -130,8 +130,9 @@ function install_cuda() {
                         cuda-samples cudata-documentation cuda-visual-tools cuda-toolkit
 
                     # If running in a container, no need for the driver itself, toolkit is sufficient
-                    [ "$(running-in-container)" = "lxc" ] || \
+                    [[ "$(running-in-container)" = "lxc" ]] || \
                         apt-get install -yqq --no-install-recommends --force-yes cuda cuda-drivers nvidia-352 nvidia-352-uvm nvidia-352-dev libcuda1-352
+
                 ;;
                 "xenial" )
                     juju-log "Not implemented Xenial packages for now. Exiting"
