@@ -29,19 +29,19 @@ function trusty::ppc64le::install_nvidia_driver() {
     wget -c http://us.download.nvidia.com/Ubuntu/352.88/NVIDIA-Linux-ppc64le-352.88.run -P /tmp
     sudo chmod +x /tmp/NVIDIA-Linux-ppc64le-352.88.run
     sudo /tmp/NVIDIA-Linux-ppc64le-352.88.run -a -q -s --disable-nouveau
-    apt-get install -yqq --no-install-recommends --force-yes cuda cuda-drivers nvidia-352 nvidia-352-uvm nvidia-352-dev libcuda1-352; 
+    apt-get install -yqq --no-install-recommends --force-yes cuda-drivers nvidia-352 nvidia-352-uvm nvidia-352-dev libcuda1-352; 
 }
 
 function trusty::x86_64::install_nvidia_driver() { 
-    apt-get install -yqq --no-install-recommends --force-yes cuda cuda-drivers nvidia-352 nvidia-352-uvm nvidia-352-dev libcuda1-352; 
+    apt-get install -yqq --no-install-recommends --force-yes cuda-drivers nvidia-352 nvidia-352-uvm nvidia-352-dev libcuda1-352; 
 }
 
 function xenial::ppc64le::install_nvidia_driver() { 
-    apt-get install -yqq --no-install-recommends --force-yes cuda cuda-drivers nvidia-352 nvidia-352-uvm nvidia-352-dev libcuda1-352; 
+    apt-get install -yqq --no-install-recommends --force-yes cuda-drivers nvidia-352 nvidia-352-uvm nvidia-352-dev libcuda1-352; 
 }
 
 function xenial::x86_64::install_nvidia_driver() { 
-    apt-get install -yqq --no-install-recommends --force-yes cuda cuda-drivers nvidia-352 nvidia-352-uvm nvidia-352-dev libcuda1-352; 
+    apt-get install -yqq --no-install-recommends --force-yes cuda-drivers nvidia-352 nvidia-352-uvm nvidia-352-dev libcuda1-352; 
 }
 
 #####################################################################
@@ -115,7 +115,8 @@ function trusty::ppc64le::install_cuda() {
         cuda-samples-${CUDA_PKG_VERSION} \
         cuda-documentation-${CUDA_PKG_VERSION} \
         cuda-visual-tools-${CUDA_PKG_VERSION} \
-        cuda-toolkit-${CUDA_PKG_VERSION}
+        cuda-toolkit-${CUDA_PKG_VERSION} \
+        cuda
 }
 
 function trusty::x86_64::install_cuda() { 
@@ -137,7 +138,8 @@ function trusty::x86_64::install_cuda() {
         cuda-curand-${CUDA_PKG_VERSION} \
         cuda-cusparse-${CUDA_PKG_VERSION} \
         cuda-npp-${CUDA_PKG_VERSION} \
-        cuda-cudart-${CUDA_PKG_VERSION}
+        cuda-cudart-${CUDA_PKG_VERSION} \
+        cuda
 }
 
 function xenial::ppc64le::install_cuda() { 
