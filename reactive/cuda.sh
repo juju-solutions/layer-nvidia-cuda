@@ -199,6 +199,9 @@ function install_cuda() {
         juju-log "This instance does not run an nVidia GPU. You will be able to compile CUDA Apps but not use CUDA"
     fi
 
+    dpkg --remove --force-remove-reinstreq grub-ieee1275 || juju-log "not installed yet, forcing not to install"
+    apt-get -yqq autoremove 
+
     juju-log "Installing common dependencies"
     apt-get update -yqq && apt-get upgrade -yqq
     apt-get install -yqq build-essential linux-image-extra-`uname -r`
