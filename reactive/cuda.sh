@@ -29,19 +29,19 @@ function trusty::ppc64le::install_nvidia_driver() {
     wget -c http://us.download.nvidia.com/Ubuntu/352.88/NVIDIA-Linux-ppc64le-352.88.run -P /tmp
     sudo chmod +x /tmp/NVIDIA-Linux-ppc64le-352.88.run
     sudo /tmp/NVIDIA-Linux-ppc64le-352.88.run -a -q -s --disable-nouveau
-    apt-get install -yqq --no-install-recommends --force-yes cuda-drivers nvidia-352 nvidia-352-uvm nvidia-352-dev libcuda1-352; 
+    apt-get install -yqq --no-install-recommends --force-yes cuda-drivers nvidia-352 nvidia-352-uvm nvidia-352-dev libcuda1-352
 }
 
 function trusty::x86_64::install_nvidia_driver() { 
-    apt-get install -yqq --no-install-recommends --force-yes cuda-drivers nvidia-352 nvidia-352-uvm nvidia-352-dev libcuda1-352; 
+    apt-get install -yqq --no-install-recommends --force-yes cuda-drivers nvidia-352 nvidia-352-uvm nvidia-352-dev libcuda1-352
 }
 
 function xenial::ppc64le::install_nvidia_driver() { 
-    apt-get install -yqq --no-install-recommends --force-yes cuda-drivers nvidia-352 nvidia-352-uvm nvidia-352-dev libcuda1-352; 
+    apt-get install -yqq --no-install-recommends --force-yes cuda-drivers nvidia-352 nvidia-352-uvm nvidia-352-dev libcuda1-352
 }
 
 function xenial::x86_64::install_nvidia_driver() { 
-    apt-get install -yqq --no-install-recommends --force-yes cuda-drivers nvidia-352 nvidia-352-uvm nvidia-352-dev libcuda1-352; 
+    apt-get install -yqq --no-install-recommends --force-yes cuda-drivers nvidia-352 nvidia-352-uvm nvidia-352-dev libcuda1-352 
 }
 
 #####################################################################
@@ -204,7 +204,8 @@ function install_cuda() {
 
     juju-log "Installing common dependencies"
     apt-get update -yqq && apt-get upgrade -yqq
-    apt-get install -yqq build-essential linux-image-extra-`uname -r`
+    apt-get install -yqq build-essential linux-image-extra-`uname -r` \
+        || apt-get install -yqq build-essential 
 
     case "$(arch)" in 
         "x86_64" | "amd64" )
