@@ -252,7 +252,27 @@ function trusty::x86_64::install_cuda() {
 }
 
 function xenial::x86_64::install_cuda() { 
-    all::all::install_cuda
+    # all::all::install_cuda
+    apt-get update -yqq
+
+    # What this does is really copy all packages from CUDA into /var/cuda-repo-7-5-local
+    apt-get install -yqq --no-install-recommends --force-yes \
+        nvidia-cuda-toolkit \
+        nvidia-cuda-dev \
+        libcudart7.5 \
+        libcufft7.5 \
+        libcufftw7.5 \
+        libcuinj64-7.5 \
+        libcupti-dev \
+        libcupti7.5 \
+        libcurand7.5 \
+        libcusparse7.5 \
+        libnppc7.5 \
+        libnppi7.5 \
+        libnpps7.5 \
+        libnvblas7.5 \
+        libnvrtc7.5 \
+        libnvvm3
 }
 
 function trusty::ppc64le::install_cuda() { 
