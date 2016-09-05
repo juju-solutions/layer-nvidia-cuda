@@ -5,6 +5,9 @@ description: |
   Installs CUDA drivers to instance
 tags:
   - misc
+series:
+  - trusty
+  - xenial
 subordinate: true
 provides:
   cuda-driver:

@@ -6,7 +6,7 @@ source charms.reactive.sh
 CUDA_VERSION="7.5"
 CUDA_SUB_VERSION="18"
 CUDA_PKG_VERSION="7-5"
-NVIDIA_DRIVER_VERSION="352.88"
+NVIDIA_DRIVER_VERSION="367.44"
 SUPPORT_CUDA="$(lspci -nnk | grep -iA2 NVIDIA | wc -l)"
 
 #####################################################################
@@ -160,10 +160,10 @@ function xenial::ppc64le::install_nvidia_gdk() {
 function all:all:install_nvidia_driver() {
     apt-get install -yqq --no-install-recommends --force-yes \
         cuda-drivers \
-        nvidia-352 \
-        nvidia-352-uvm \
-        nvidia-352-dev \
-        libcuda1-352
+        nvidia-361 \
+        nvidia-361-uvm \
+        nvidia-361-dev \
+        libcuda1-361
 }
 
 function trusty::x86_64::install_nvidia_driver() { 
@@ -252,8 +252,7 @@ function trusty::x86_64::install_cuda() {
 }
 
 function xenial::x86_64::install_cuda() { 
-    juju-log "Not planned yet. Trying Trusty method"
-    trusty::${ARCH}::install_cuda
+    all::all::install_cuda
 }
 
 function trusty::ppc64le::install_cuda() { 
