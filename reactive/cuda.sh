@@ -3,11 +3,12 @@ set -ex
 
 source charms.reactive.sh
 
-CUDA_VERSION="7.5"
-CUDA_SUB_VERSION="18"
-CUDA_PKG_VERSION="7-5"
+CUDA_VERSION="8.0.44"
+CUDA_SUB_VERSION="1"
+# CUDA_PKG_VERSION="7-5"
 NVIDIA_DRIVER_VERSION="367.44"
 SUPPORT_CUDA="$(lspci -nnk | grep -iA2 NVIDIA | wc -l)"
+ROOT_URL="${ROOT_URL}"
 
 #####################################################################
 #
@@ -39,9 +40,11 @@ esac
 case "${UBUNTU_CODENAME}" in 
     "trusty" )
         LXC_CMD="$(running-in-container | grep lxc | wc -l)"
+        UBUNTU_VERSION=ubuntu1404
     ;;
     "xenial" )
         LXC_CMD="$(systemd-detect-virt --container | grep lxc | wc -l)"
+        UBUNTU_VERSION=ubuntu1604
     ;;
     * )
         juju-log "Your version of Ubuntu is not supported. Exiting"
@@ -159,9 +162,7 @@ function xenial::ppc64le::install_nvidia_gdk() {
 
 function all:all:install_nvidia_driver() {
     apt-get install -yqq --no-install-recommends --force-yes \
-        cuda-drivers \
         nvidia-361 \
-        nvidia-361-uvm \
         nvidia-361-dev \
         libcuda1-361
 }
@@ -175,14 +176,15 @@ function xenial::x86_64::install_nvidia_driver() {
 }
 
 function trusty::ppc64le::install_nvidia_driver() { 
-    wget -c http://us.download.nvidia.com/Ubuntu/"${NVIDIA_DRIVER_VERSION}"/NVIDIA-Linux-"${ARCH}"-"${NVIDIA_DRIVER_VERSION}".run -P /tmp
-    chmod +x /tmp/NVIDIA-Linux-"${ARCH}"-"${NVIDIA_DRIVER_VERSION}".run
-    /tmp/NVIDIA-Linux-"${ARCH}"-"${NVIDIA_DRIVER_VERSION}".run -a -q -s --disable-nouveau
-    all:all:install_nvidia_driver
+    # wget -c http://us.download.nvidia.com/Ubuntu/"${NVIDIA_DRIVER_VERSION}"/NVIDIA-Linux-"${ARCH}"-"${NVIDIA_DRIVER_VERSION}".run -P /tmp
+    # chmod +x /tmp/NVIDIA-Linux-"${ARCH}"-"${NVIDIA_DRIVER_VERSION}".run
+    # /tmp/NVIDIA-Linux-"${ARCH}"-"${NVIDIA_DRIVER_VERSION}".run -a -q -s --disable-nouveau
+    # all:all:install_nvidia_driver
+    bash::lib::log warn "This task is handled by the cuda installer"
 }
 
 function xenial::ppc64le::install_nvidia_driver() { 
-    all:all:install_nvidia_driver
+    bash::lib::log info "This task is handled by the cuda installer"
 }
 
 #####################################################################
@@ -190,6 +192,20 @@ function xenial::ppc64le::install_nvidia_driver() {
 # Install OpenBlas per architecture
 # 
 #####################################################################
+
+function trusty::x86_64::install_openblas() { 
+    apt-get update -qq 
+    apt-get install -yqq --force-yes --no-install-recommends \
+        libopenblas-base \
+        libopenblas-dev
+}
+
+function xenial::x86_64::install_openblas() { 
+    juju-log "Not planned yet"
+    apt-get install -yqq --force-yes --no-install-recommends \
+        libopenblas-base \
+        libopenblas-dev
+}
 
 function trusty::ppc64le::install_openblas() { 
     [ -d "/mnt/openblas" ] \
@@ -199,21 +215,10 @@ function trusty::ppc64le::install_openblas() {
         make && make PREFIX=/usr install
 }
 
-function trusty::x86_64::install_openblas() { 
-    apt-get update -qq 
-    apt-get install -yqq --force-yes --no-install-recommends \
-        libopenblas-base \
-        libopenblas-dev
-}
-
 function xenial::ppc64le::install_openblas() { 
     apt-get install -yqq --force-yes --no-install-recommends \
         libopenblas-base \
         libopenblas-dev
-}
-
-function xenial::x86_64::install_openblas() { 
-    juju-log "Not planned yet"
 }
 
 #####################################################################
@@ -222,72 +227,46 @@ function xenial::x86_64::install_openblas() {
 # 
 #####################################################################
 
-function all::all::install_cuda() { 
-   apt-get update -yqq
-
-    # What this does is really copy all packages from CUDA into /var/cuda-repo-7-5-local
-    apt-get install -yqq --no-install-recommends --force-yes \
-        cuda-nvrtc-${CUDA_PKG_VERSION} \
-        cuda-cusolver-${CUDA_PKG_VERSION} \
-        cuda-cublas-${CUDA_PKG_VERSION} \
-        cuda-cufft-${CUDA_PKG_VERSION} \
-        cuda-curand-${CUDA_PKG_VERSION} \
-        cuda-cusparse-${CUDA_PKG_VERSION} \
-        cuda-npp-${CUDA_PKG_VERSION} \
-        cuda-cudart-${CUDA_PKG_VERSION} \
+function all::x86_64::install_cuda() { 
+    wget -c -p /tmp "${ROOT_URL}/${UBUNTU_VERSION}/x86_64/cuda-repo-${UBUNTU_VERSION}_${CUDA_VERSION}-${CUDA_SUB_VERSION}_amd64.deb"
+    dpkg -i /tmp/cuda-repo-${UBUNTU_VERSION}_${CUDA_VERSION}-${CUDA_SUB_VERSION}_amd64.deb
+    apt update && \
+    apt install -yqq --allow-downgrades --allow-remove-essential --allow-change-held-packages \
         cuda
 }
 
 function trusty::x86_64::install_cuda() { 
-    NVIDIA_GPGKEY_SUM="bd841d59a27a406e513db7d405550894188a4c1cd96bf8aa4f82f1b39e0b5c1c"
-    NVIDIA_GPGKEY_FPR="889bee522da690103c4b085ed88c3d385c37d3be"
+    # NVIDIA_GPGKEY_SUM="bd841d59a27a406e513db7d405550894188a4c1cd96bf8aa4f82f1b39e0b5c1c"
+    # NVIDIA_GPGKEY_FPR="889bee522da690103c4b085ed88c3d385c37d3be"
 
-    apt-key adv --fetch-keys http://developer.download.nvidia.com/compute/cuda/repos/GPGKEY && \
-        apt-key adv --export --no-emit-version -a $NVIDIA_GPGKEY_FPR | tail -n +2 > cudasign.pub && \
-        echo "$NVIDIA_GPGKEY_SUM cudasign.pub" | sha256sum -c --strict - && rm cudasign.pub && \
-        echo "deb http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1404/x86_64 /" > /etc/apt/sources.list.d/cuda.list
-
-    all::all::install_cuda
-
+    # apt-key adv --fetch-keys ${ROOT_URL}/GPGKEY && \
+    #     apt-key adv --export --no-emit-version -a $NVIDIA_GPGKEY_FPR | tail -n +2 > cudasign.pub && \
+    #     echo "$NVIDIA_GPGKEY_SUM cudasign.pub" | sha256sum -c --strict - && rm cudasign.pub && \
+    #     echo "deb ${ROOT_URL}/ubuntu1404/x86_64 /" > /etc/apt/sources.list.d/cuda.list
+    all::x86_64::install_cuda
 }
 
 function xenial::x86_64::install_cuda() { 
-    # all::all::install_cuda
-    apt-get update -yqq
-
-    # What this does is really copy all packages from CUDA into /var/cuda-repo-7-5-local
-    apt-get install -yqq --no-install-recommends --force-yes \
-        nvidia-cuda-toolkit \
-        nvidia-cuda-dev \
-        libcudart7.5 \
-        libcufft7.5 \
-        libcufftw7.5 \
-        libcuinj64-7.5 \
-        libcupti-dev \
-        libcupti7.5 \
-        libcurand7.5 \
-        libcusparse7.5 \
-        libnppc7.5 \
-        libnppi7.5 \
-        libnpps7.5 \
-        libnvblas7.5 \
-        libnvrtc7.5 \
-        libnvvm3
+    all::x86_64::install_cuda
 }
 
 function trusty::ppc64le::install_cuda() { 
-    wget -c -P /tmp "http://developer.download.nvidia.com/compute/cuda/${CUDA_VERSION}/Prod/local_installers/cuda-repo-ubuntu1404-${CUDA_PKG_VERSION}-local_${CUDA_VERSION}-${CUDA_SUB_VERSION}_ppc64el.deb"
-    dpkg -i /tmp/cuda-repo-ubuntu1404-${CUDA_PKG_VERSION}-local_${CUDA_VERSION}-${CUDA_SUB_VERSION}_ppc64el.deb
+    # wget -c -P /tmp "http://developer.download.nvidia.com/compute/cuda/${CUDA_VERSION}/Prod/local_installers/cuda-repo-ubuntu1404-${CUDA_PKG_VERSION}-local_${CUDA_VERSION}-${CUDA_SUB_VERSION}_ppc64el.deb"
+    # dpkg -i /tmp/cuda-repo-ubuntu1404-${CUDA_PKG_VERSION}-local_${CUDA_VERSION}-${CUDA_SUB_VERSION}_ppc64el.deb
 
-    apt-add-repository -y ppa:openjdk-r/ppa
-    apt-add-repository -y ppa:jochenkemnade/openjdk-8
+    # apt-add-repository -y ppa:openjdk-r/ppa
+    # apt-add-repository -y ppa:jochenkemnade/openjdk-8
 
-    all::all::install_cuda
+    # all::all::install_cuda
+    bash::lib::die This OS is not supported by nVidia for CUDA 8.0. Please upgrade to 16.04
 }
 
 function xenial::ppc64le::install_cuda() { 
-    juju-log "Not planned yet. Trying Trusty method"
-    trusty::${ARCH}::install_cuda
+    wget -c -p /tmp "${ROOT_URL}/${UBUNTU_VERSION}/ppc64el/cuda-repo-${UBUNTU_VERSION}_${CUDA_VERSION}-${CUDA_SUB_VERSION}_ppc64el.deb"
+    dpkg -i /tmp/cuda-repo-${UBUNTU_VERSION}_${CUDA_VERSION}-${CUDA_SUB_VERSION}_ppc64el.deb
+    apt update && \
+    apt install -yqq --allow-downgrades --allow-remove-essential --allow-change-held-packages \
+            cuda
 }
 
 #####################################################################
@@ -368,9 +347,8 @@ function install_cuda() {
 
             # Installing driver only on bare metal
             [ "${LXC_CMD}" = "0" ] && \
-                ${UBUNTU_CODENAME}::${ARCH}::install_nvidia_driver && \
-                    juju-reboot || \
-                    juju-log "Running in a container. No need for the nVidia Driver"
+                ${UBUNTU_CODENAME}::${ARCH}::install_nvidia_driver || \
+                juju-log "Running in a container. No need for the nVidia Driver"
         ;;
     esac
 
