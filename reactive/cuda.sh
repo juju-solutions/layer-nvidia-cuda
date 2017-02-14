@@ -3,12 +3,12 @@ set -ex
 
 source charms.reactive.sh
 
-CUDA_VERSION="8.0.44"
+CUDA_VERSION="8.0.61"
 CUDA_SUB_VERSION="1"
 # CUDA_PKG_VERSION="7-5"
-NVIDIA_DRIVER_VERSION="367.44"
+NVIDIA_DRIVER_VERSION="375.26"
 SUPPORT_CUDA="$(lspci -nnk | grep -iA2 NVIDIA | wc -l)"
-ROOT_URL="${ROOT_URL}"
+ROOT_URL="http://developer.download.nvidia.com/compute/cuda/repos"
 
 #####################################################################
 #
@@ -161,10 +161,12 @@ function xenial::ppc64le::install_nvidia_gdk() {
 #####################################################################
 
 function all:all:install_nvidia_driver() {
-    apt-get install -yqq --no-install-recommends --force-yes \
-        nvidia-361 \
-        nvidia-361-dev \
-        libcuda1-361
+
+    apt-get remove -yqq --purge nvidia-* libcuda1-*
+    apt-get install -yqq --no-install-recommends \
+        nvidia-375 \
+        nvidia-375-dev \
+        libcuda1-375
 }
 
 function trusty::x86_64::install_nvidia_driver() { 
@@ -195,14 +197,14 @@ function xenial::ppc64le::install_nvidia_driver() {
 
 function trusty::x86_64::install_openblas() { 
     apt-get update -qq 
-    apt-get install -yqq --force-yes --no-install-recommends \
+    apt-get install -yqq --no-install-recommends \
         libopenblas-base \
         libopenblas-dev
 }
 
 function xenial::x86_64::install_openblas() { 
     juju-log "Not planned yet"
-    apt-get install -yqq --force-yes --no-install-recommends \
+    apt-get install -yqq --no-install-recommends \
         libopenblas-base \
         libopenblas-dev
 }
@@ -216,7 +218,7 @@ function trusty::ppc64le::install_openblas() {
 }
 
 function xenial::ppc64le::install_openblas() { 
-    apt-get install -yqq --force-yes --no-install-recommends \
+    apt-get install -yqq --no-install-recommends \
         libopenblas-base \
         libopenblas-dev
 }
@@ -228,11 +230,15 @@ function xenial::ppc64le::install_openblas() {
 #####################################################################
 
 function all::x86_64::install_cuda() { 
-    wget -c -p /tmp "${ROOT_URL}/${UBUNTU_VERSION}/x86_64/cuda-repo-${UBUNTU_VERSION}_${CUDA_VERSION}-${CUDA_SUB_VERSION}_amd64.deb"
-    dpkg -i /tmp/cuda-repo-${UBUNTU_VERSION}_${CUDA_VERSION}-${CUDA_SUB_VERSION}_amd64.deb
+    INSTALL_PKG="cuda-repo-${UBUNTU_VERSION}_${CUDA_VERSION}-${CUDA_SUB_VERSION}_amd64.deb"
+    cd /tmp
+    [ -f ${INSTALL_PKG} ] && rm -f ${INSTALL_PKG}
+    wget ${ROOT_URL}/${UBUNTU_VERSION}/x86_64/${INSTALL_PKG}
+    dpkg -i /tmp/${INSTALL_PKG}
     apt update && \
     apt install -yqq --allow-downgrades --allow-remove-essential --allow-change-held-packages \
         cuda
+    rm -f ${INSTALL_PKG}
 }
 
 function trusty::x86_64::install_cuda() { 
@@ -317,7 +323,7 @@ function install_cuda() {
     # In any case remove nouveau driver
     apt-get remove -yqq --purge libdrm-nouveau* 
     # Here we also need to blacklist nouveau
-    apt-get install -yqq --force-yes --no-install-recommends \
+    apt-get install -yqq --no-install-recommends \
         git \
         curl \
         wget \
