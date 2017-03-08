@@ -13,7 +13,7 @@ ROOT_URL="http://developer.download.nvidia.com/compute/cuda/repos"
 #####################################################################
 #
 # Basic Functions
-# 
+#
 #####################################################################
 
 function bash::lib::get_ubuntu_codename() {
@@ -37,7 +37,7 @@ case "$(arch)" in
     ;;
 esac
 
-case "${UBUNTU_CODENAME}" in 
+case "${UBUNTU_CODENAME}" in
     "trusty" )
         LXC_CMD="$(running-in-container | grep lxc | wc -l)"
         UBUNTU_VERSION=ubuntu1404
@@ -55,7 +55,7 @@ esac
 #####################################################################
 #
 # Install nvidia GDK per architecture
-# 
+#
 #####################################################################
 
 function all:all:install_nvidia_gdk() {
@@ -130,25 +130,25 @@ EOF
     juju-log "Wrote '${NVIDIA_GDK_CONF_FILE}' and ran ldconfig"
 }
 
-function trusty::x86_64::install_nvidia_gdk() { 
+function trusty::x86_64::install_nvidia_gdk() {
     # The checksum of the gdk installer.
     NVIDIA_GDK_INSTALLER_SUM="3fa9d17cd57119d82d4088e5cfbfcad960f12e3384e3e1a7566aeb2441e54ce4"
     all::all:install_nvidia_gdk
 }
 
-function xenial::x86_64::install_nvidia_gdk() { 
+function xenial::x86_64::install_nvidia_gdk() {
     # The checksum of the gdk installer.
     NVIDIA_GDK_INSTALLER_SUM="3fa9d17cd57119d82d4088e5cfbfcad960f12e3384e3e1a7566aeb2441e54ce4"
     all::all:install_nvidia_gdk
 }
 
-function trusty::ppc64le::install_nvidia_gdk() { 
+function trusty::ppc64le::install_nvidia_gdk() {
     # The checksum of the gdk installer.
     NVIDIA_GDK_INSTALLER_SUM="064678e29d39f0c21f4b66c5e2fb18ba65fd9bc3372d0b319c31cab0e791fc1c"
     all::all:install_nvidia_gdk
 }
 
-function xenial::ppc64le::install_nvidia_gdk() { 
+function xenial::ppc64le::install_nvidia_gdk() {
     # The checksum of the gdk installer.
     NVIDIA_GDK_INSTALLER_SUM="064678e29d39f0c21f4b66c5e2fb18ba65fd9bc3372d0b319c31cab0e791fc1c"
     all::all:install_nvidia_gdk
@@ -157,7 +157,7 @@ function xenial::ppc64le::install_nvidia_gdk() {
 #####################################################################
 #
 # Install nvidia driver per architecture
-# 
+#
 #####################################################################
 
 function all:all:install_nvidia_driver() {
@@ -169,15 +169,15 @@ function all:all:install_nvidia_driver() {
         libcuda1-375
 }
 
-function trusty::x86_64::install_nvidia_driver() { 
+function trusty::x86_64::install_nvidia_driver() {
     all:all:install_nvidia_driver
 }
 
-function xenial::x86_64::install_nvidia_driver() { 
+function xenial::x86_64::install_nvidia_driver() {
     all:all:install_nvidia_driver
 }
 
-function trusty::ppc64le::install_nvidia_driver() { 
+function trusty::ppc64le::install_nvidia_driver() {
     # wget -c http://us.download.nvidia.com/Ubuntu/"${NVIDIA_DRIVER_VERSION}"/NVIDIA-Linux-"${ARCH}"-"${NVIDIA_DRIVER_VERSION}".run -P /tmp
     # chmod +x /tmp/NVIDIA-Linux-"${ARCH}"-"${NVIDIA_DRIVER_VERSION}".run
     # /tmp/NVIDIA-Linux-"${ARCH}"-"${NVIDIA_DRIVER_VERSION}".run -a -q -s --disable-nouveau
@@ -185,31 +185,31 @@ function trusty::ppc64le::install_nvidia_driver() {
     bash::lib::log warn "This task is handled by the cuda installer"
 }
 
-function xenial::ppc64le::install_nvidia_driver() { 
+function xenial::ppc64le::install_nvidia_driver() {
     bash::lib::log info "This task is handled by the cuda installer"
 }
 
 #####################################################################
 #
 # Install OpenBlas per architecture
-# 
+#
 #####################################################################
 
-function trusty::x86_64::install_openblas() { 
-    apt-get update -qq 
+function trusty::x86_64::install_openblas() {
+    apt-get update -qq
     apt-get install -yqq --no-install-recommends \
         libopenblas-base \
         libopenblas-dev
 }
 
-function xenial::x86_64::install_openblas() { 
+function xenial::x86_64::install_openblas() {
     juju-log "Not planned yet"
     apt-get install -yqq --no-install-recommends \
         libopenblas-base \
         libopenblas-dev
 }
 
-function trusty::ppc64le::install_openblas() { 
+function trusty::ppc64le::install_openblas() {
     [ -d "/mnt/openblas" ] \
         || git clone https://github.com/xianyi/OpenBLAS.git /mnt/openblas \
         && { cd "/mnt/openblas" ; git pull ; cd - ; }
@@ -217,7 +217,7 @@ function trusty::ppc64le::install_openblas() {
         make && make PREFIX=/usr install
 }
 
-function xenial::ppc64le::install_openblas() { 
+function xenial::ppc64le::install_openblas() {
     apt-get install -yqq --no-install-recommends \
         libopenblas-base \
         libopenblas-dev
@@ -226,10 +226,10 @@ function xenial::ppc64le::install_openblas() {
 #####################################################################
 #
 # Install CUDA per architecture
-# 
+#
 #####################################################################
 
-function all::x86_64::install_cuda() { 
+function all::x86_64::install_cuda() {
     INSTALL_PKG="cuda-repo-${UBUNTU_VERSION}_${CUDA_VERSION}-${CUDA_SUB_VERSION}_amd64.deb"
     cd /tmp
     [ -f ${INSTALL_PKG} ] && rm -f ${INSTALL_PKG}
@@ -241,7 +241,7 @@ function all::x86_64::install_cuda() {
     rm -f ${INSTALL_PKG}
 }
 
-function trusty::x86_64::install_cuda() { 
+function trusty::x86_64::install_cuda() {
     # NVIDIA_GPGKEY_SUM="bd841d59a27a406e513db7d405550894188a4c1cd96bf8aa4f82f1b39e0b5c1c"
     # NVIDIA_GPGKEY_FPR="889bee522da690103c4b085ed88c3d385c37d3be"
 
@@ -252,11 +252,11 @@ function trusty::x86_64::install_cuda() {
     all::x86_64::install_cuda
 }
 
-function xenial::x86_64::install_cuda() { 
+function xenial::x86_64::install_cuda() {
     all::x86_64::install_cuda
 }
 
-function trusty::ppc64le::install_cuda() { 
+function trusty::ppc64le::install_cuda() {
     # wget -c -P /tmp "http://developer.download.nvidia.com/compute/cuda/${CUDA_VERSION}/Prod/local_installers/cuda-repo-ubuntu1404-${CUDA_PKG_VERSION}-local_${CUDA_VERSION}-${CUDA_SUB_VERSION}_ppc64el.deb"
     # dpkg -i /tmp/cuda-repo-ubuntu1404-${CUDA_PKG_VERSION}-local_${CUDA_VERSION}-${CUDA_SUB_VERSION}_ppc64el.deb
 
@@ -267,7 +267,7 @@ function trusty::ppc64le::install_cuda() {
     bash::lib::die This OS is not supported by nVidia for CUDA 8.0. Please upgrade to 16.04
 }
 
-function xenial::ppc64le::install_cuda() { 
+function xenial::ppc64le::install_cuda() {
     wget -c -p /tmp "${ROOT_URL}/${UBUNTU_VERSION}/ppc64el/cuda-repo-${UBUNTU_VERSION}_${CUDA_VERSION}-${CUDA_SUB_VERSION}_ppc64el.deb"
     dpkg -i /tmp/cuda-repo-${UBUNTU_VERSION}_${CUDA_VERSION}-${CUDA_SUB_VERSION}_ppc64el.deb
     apt update && \
@@ -278,7 +278,7 @@ function xenial::ppc64le::install_cuda() {
 #####################################################################
 #
 # Add CUDA libraries & paths
-# 
+#
 #####################################################################
 
 function all::all::add_cuda_path() {
@@ -314,14 +314,26 @@ EOF
 
 }
 
-# @hook 'install'
+@only_once
+function check_cuda_support() {
+    case "${SUPPORT_CUDA}" in
+        "0" )
+            juju-log "This instance does not run an nVidia GPU."
+        ;;
+        * )
+            charms.reactive set_state 'cuda.supported'
+        ;;
+    esac
+}
+
+@when 'cuda.supported'
 @when_not 'cuda.installed'
 function install_cuda() {
 
-    apt-get update -qq 
+    apt-get update -qq
     apt-get upgrade -yqq
     # In any case remove nouveau driver
-    apt-get remove -yqq --purge libdrm-nouveau* 
+    apt-get remove -yqq --purge libdrm-nouveau*
     # Here we also need to blacklist nouveau
     apt-get install -yqq --no-install-recommends \
         git \
@@ -329,49 +341,36 @@ function install_cuda() {
         wget \
         build-essential
 
-    # charms.reactive unset_state 'cuda.installed'
     status-set maintenance "Installing CUDA"
 
-    juju-log "Testing presence of CUDA compliant device"
-    case "${SUPPORT_CUDA}" in 
-        "0" ) 
-            juju-log "This instance does not run an nVidia GPU. You will be able to compile CUDA Apps but not use CUDA"
-            NVIDIA_GDK_INSTALL_PATH="/opt/nvidia-gdk"
-            NVIDIA_GDK_CONF_FILE="/etc/ld.so.conf.d/nvidia-gdk.conf"
-            ${UBUNTU_CODENAME}::${ARCH}::install_nvidia_gdk
-            # Add code to install the GDK
-        ;;
-        * )
-            # This is a hack as for some reason this package fails
-            dpkg --remove --force-remove-reinstreq grub-ieee1275 || juju-log "not installed yet, forcing not to install"
-            apt-get -yqq autoremove 
+    # The gdk could be installed regardless of whether a gpu is detected, and
+    # used to compile CUDA apps on this host, even if they can't be run.
+    # For now we'll skip this to shorten install time, but we could make this
+    # possible later with a config option or something.
+    #
+    # ${UBUNTU_CODENAME}::${ARCH}::install_nvidia_gdk
 
-            juju-log "Installing common dependencies"
-            # latest kernel doesn't have image-extra so we try only
-            apt-get install -yqq  linux-image-extra-`uname -r` \
-                || juju-log "linux-image-extra-`uname -r` not available. Skipping"
 
-            # Installing driver only on bare metal
-            [ "${LXC_CMD}" = "0" ] && \
-                ${UBUNTU_CODENAME}::${ARCH}::install_nvidia_driver || \
-                juju-log "Running in a container. No need for the nVidia Driver"
-        ;;
-    esac
+    # This is a hack as for some reason this package fails
+    dpkg --remove --force-remove-reinstreq grub-ieee1275 || juju-log "not installed yet, forcing not to install"
+    apt-get -yqq autoremove
+
+    juju-log "Installing common dependencies"
+    # latest kernel doesn't have image-extra so we try only
+    apt-get install -yqq  linux-image-extra-`uname -r` \
+        || juju-log "linux-image-extra-`uname -r` not available. Skipping"
+
+    # Install driver only on bare metal
+    [ "${LXC_CMD}" = "0" ] && \
+        ${UBUNTU_CODENAME}::${ARCH}::install_nvidia_driver || \
+        juju-log "Running in a container. No need for the nVidia Driver"
+
 
     ${UBUNTU_CODENAME}::${ARCH}::install_openblas
     ${UBUNTU_CODENAME}::${ARCH}::install_cuda
     all::all::add_cuda_path
 
-    status-set waiting "Waiting for reboot"
     charms.reactive set_state 'cuda.installed'
-}
-
-@when 'cuda.installed'
-@when_not 'cuda.available'
-function reboot() {
-
-    status-set active "CUDA installed and available"
-    charms.reactive set_state 'cuda.available'
 }
 
 reactive_handler_main

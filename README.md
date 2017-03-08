@@ -1,19 +1,26 @@
-# Installing CUDA on GPU enabled hardware
+# Nvidia CUDA Layer
 
-This simple charm installs the CUDA driver on a blank image running on a GPU instance. It first test if a GPU from nVidia is installed. If yes, it will install CUDA. Otherwise, it will exit in error. 
+Installs CUDA and Nvidia drivers when supported GPU hardware is
+detected.
+
+The latest versions for the given architecture will be installed.
+
+
+## States
+
+The following states are set by this layer:
+
+
+* `cuda.supported`
+
+  This state is set when supported GPU hardware is detected.
+
+* `cuda.installed'
+
+  This state is set once CUDA and drivers are installed.
+
 
 ## Usage
 
-Deploy a GPU enabled instance. For example, on AWS:
-
-
-```
-juju deploy --constraints "instance-type=g2.2xlarge" trusty/ubuntu ubuntu-gpu
-```
-
-Then install the CUDA charm 
-
-```
-juju deploy cs:~samuel-cozannet/trusty/cuda
-juju add-relation ubuntu-gpu cuda
-```
+To use this layer, include it in a charm and deploy the charm to a cloud
+instance with Nvidia GPUs, e.g. "instance-type=p2.xlarge" on AWS.
