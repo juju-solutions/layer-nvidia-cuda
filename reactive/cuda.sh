@@ -235,8 +235,8 @@ function all::x86_64::install_cuda() {
     [ -f ${INSTALL_PKG} ] && rm -f ${INSTALL_PKG}
     wget ${ROOT_URL}/${UBUNTU_VERSION}/x86_64/${INSTALL_PKG}
     dpkg -i /tmp/${INSTALL_PKG}
-    apt update && \
-    apt install -yqq --allow-downgrades --allow-remove-essential --allow-change-held-packages \
+    apt-get update && \
+    apt-get install -yqq --allow-downgrades --allow-remove-essential --allow-change-held-packages --no-install-recommends \
         cuda
     rm -f ${INSTALL_PKG}
 }
@@ -270,8 +270,8 @@ function trusty::ppc64le::install_cuda() {
 function xenial::ppc64le::install_cuda() {
     wget -c -p /tmp "${ROOT_URL}/${UBUNTU_VERSION}/ppc64el/cuda-repo-${UBUNTU_VERSION}_${CUDA_VERSION}-${CUDA_SUB_VERSION}_ppc64el.deb"
     dpkg -i /tmp/cuda-repo-${UBUNTU_VERSION}_${CUDA_VERSION}-${CUDA_SUB_VERSION}_ppc64el.deb
-    apt update && \
-    apt install -yqq --allow-downgrades --allow-remove-essential --allow-change-held-packages \
+    apt-get update && \
+    apt-get install -yqq --allow-downgrades --allow-remove-essential --allow-change-held-packages --no-install-recommends \
             cuda
 }
 
@@ -331,7 +331,7 @@ function check_cuda_support() {
 function install_cuda() {
 
     apt-get update -qq
-    apt-get upgrade -yqq
+    # apt-get upgrade -yqq
     # In any case remove nouveau driver
     apt-get remove -yqq --purge libdrm-nouveau*
     # Here we also need to blacklist nouveau
