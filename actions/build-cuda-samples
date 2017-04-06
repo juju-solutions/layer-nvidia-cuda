@@ -1,7 +1,0 @@
-#!/bin/bash
-set -ex
-
-echo 'Building CUDA samples'
-cd /usr/local/cuda/samples
-make
-
