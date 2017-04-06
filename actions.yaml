@@ -1,2 +1,2 @@
 build-cuda-samples:
-    description: "Build the sample comming with CUDA."
+    description: "Build CUDA samples."
