@@ -338,6 +338,12 @@ function check_cuda_support() {
 @when_not 'cuda.installed'
 function install_cuda() {
 
+    INSTALL=$(config-get install-cuda)
+    if [ $INSTALL = False ]; then
+      juju-log "Skip cuda installation"
+      return
+    fi
+
     apt-get update -qq
     # apt-get upgrade -yqq
     # In any case remove nouveau driver
