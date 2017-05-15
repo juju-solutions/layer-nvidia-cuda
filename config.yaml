@@ -4,3 +4,8 @@ options:
     default: "8.0.61-1"
     description: |
       The version of CUDA to be installed.
+  install-cuda:
+    type: boolean
+    default: True
+    description: |
+      Install the CUDA binaries if capable hardware is present.
