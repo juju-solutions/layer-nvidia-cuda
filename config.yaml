@@ -1,0 +1,11 @@
+options:
+  cuda-version:
+    type: string
+    default: "8.0.61"
+    description: |
+      The version of CUDA to be intalled.
+  cuda-subversion:
+    type: string
+    default: "1"
+    description: |
+      The subversion of CUDA to be intalled.
