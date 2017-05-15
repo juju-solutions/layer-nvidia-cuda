@@ -3,8 +3,8 @@ set -ex
 
 source charms.reactive.sh
 
-CUDA_VERSION="8.0.61"
-CUDA_SUB_VERSION="1"
+CUDA_VERSION=$(config-get cuda-version | awk 'BEGIN{FS="-"}{print $1}')
+CUDA_SUB_VERSION=$(config-get cuda-version | awk 'BEGIN{FS="-"}{print $2}')
 # CUDA_PKG_VERSION="7-5"
 NVIDIA_DRIVER_VERSION="375.26"
 SUPPORT_CUDA="$(lspci -nnk | grep -iA2 NVIDIA | wc -l)"
