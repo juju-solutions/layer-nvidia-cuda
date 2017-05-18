@@ -198,7 +198,7 @@ EOF
     fi
 }
 
-@only_once
+@when_not 'cuda.supported'
 function check_cuda_support() {
     case "${SUPPORT_CUDA}" in
         "0" )
