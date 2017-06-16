@@ -20,19 +20,6 @@ function bash::lib::get_ubuntu_codename() {
 
 UBUNTU_CODENAME="$(bash::lib::get_ubuntu_codename)"
 
-case "$(arch)" in
-    "x86_64" | "amd64" )
-        ARCH="x86_64"
-    ;;
-    "ppc64le" | "ppc64el" )
-        ARCH="ppc64le"
-    ;;
-    * )
-        juju-log "Your architecture is not supported. Exiting"
-        exit 1
-    ;;
-esac
-
 case "${UBUNTU_CODENAME}" in
     "trusty" )
         LXC_CMD="$(running-in-container | grep lxc | wc -l)"
@@ -47,6 +34,24 @@ case "${UBUNTU_CODENAME}" in
         exit 1
     ;;
 esac
+
+case "$(arch)" in
+    "x86_64" | "amd64" )
+        ARCH="x86_64"
+        REPO_PKG="cuda-repo-${UBUNTU_VERSION}_${CUDA_VERSION}-${CUDA_SUB_VERSION}_amd64.deb"
+        REPO_URL="${ROOT_URL}/${UBUNTU_VERSION}/x86_64/${REPO_PKG}"
+    ;;
+    "ppc64le" | "ppc64el" )
+        ARCH="ppc64le"
+        REPO_PKG="cuda-repo-${UBUNTU_VERSION}_${CUDA_VERSION}-${CUDA_SUB_VERSION}_ppc64el.deb"
+        REPO_URL="${ROOT_URL}/${UBUNTU_VERSION}/ppc64el/${REPO_PKG}"
+    ;;
+    * )
+        juju-log "Your architecture is not supported. Exiting"
+        exit 1
+    ;;
+esac
+
 
 #####################################################################
 #
@@ -86,14 +91,12 @@ function xenial::ppc64le::install_nvidia_driver() {
 #####################################################################
 
 function trusty::x86_64::install_openblas() {
-    apt-get update -qq
     apt-get install -yqq --no-install-recommends \
         libopenblas-base \
         libopenblas-dev
 }
 
 function xenial::x86_64::install_openblas() {
-    juju-log "Not planned yet"
     apt-get install -yqq --no-install-recommends \
         libopenblas-base \
         libopenblas-dev
@@ -119,24 +122,23 @@ function xenial::ppc64le::install_openblas() {
 #
 #####################################################################
 
-function all::x86_64::install_cuda() {
-    INSTALL_PKG="cuda-repo-${UBUNTU_VERSION}_${CUDA_VERSION}-${CUDA_SUB_VERSION}_amd64.deb"
+function all::all::install_cuda() {
     cd /tmp
-    [ -f ${INSTALL_PKG} ] && rm -f ${INSTALL_PKG}
-    wget ${ROOT_URL}/${UBUNTU_VERSION}/x86_64/${INSTALL_PKG}
-    dpkg -i /tmp/${INSTALL_PKG}
+    [ -f ${REPO_PKG} ] && rm -f ${REPO_PKG}
+    wget ${REPO_URL}
+    dpkg -i /tmp/${REPO_PKG}
     apt-get update -qq && \
     apt-get install -yqq --allow-downgrades --allow-remove-essential --allow-change-held-packages --no-install-recommends \
         cuda
-    rm -f ${INSTALL_PKG}
+    rm -f ${REPO_PKG}
 }
 
 function trusty::x86_64::install_cuda() {
-    all::x86_64::install_cuda
+    all::all::install_cuda
 }
 
 function xenial::x86_64::install_cuda() {
-    all::x86_64::install_cuda
+    all::all::install_cuda
 }
 
 function trusty::ppc64le::install_cuda() {
@@ -144,11 +146,7 @@ function trusty::ppc64le::install_cuda() {
 }
 
 function xenial::ppc64le::install_cuda() {
-    wget -c -p /tmp "${ROOT_URL}/${UBUNTU_VERSION}/ppc64el/cuda-repo-${UBUNTU_VERSION}_${CUDA_VERSION}-${CUDA_SUB_VERSION}_ppc64el.deb"
-    dpkg -i /tmp/cuda-repo-${UBUNTU_VERSION}_${CUDA_VERSION}-${CUDA_SUB_VERSION}_ppc64el.deb
-    apt-get update -qq && \
-    apt-get install -yqq --allow-downgrades --allow-remove-essential --allow-change-held-packages --no-install-recommends \
-            cuda
+    all::all::install_cuda
 }
 
 #####################################################################
@@ -166,7 +164,7 @@ function all::all::add_cuda_path() {
 /usr/local/cuda/lib64
 EOF
 
-    cat > /etc/ld.so.conf.d/nvidia.conf << EOF
+    [ -d "/usr/local/nvidia" ] && cat > /etc/ld.so.conf.d/nvidia.conf << EOF
 /usr/local/nvidia/lib
 /usr/local/nvidia/lib64
 EOF
@@ -178,7 +176,7 @@ export PATH=/usr/local/cuda/bin:${PATH}
 export LD_LIBRARY_PATH="/usr/local/cuda/lib64:/usr/local/cuda/lib:${LD_LIBRARY_PATH}"
 EOF
 
-    cat > /etc/profile.d/nvidia.sh << EOF
+    [ -d "/usr/local/nvidia" ] && cat > /etc/profile.d/nvidia.sh << EOF
 export PATH=/usr/local/nvidia/bin:${PATH}
 export LD_LIBRARY_PATH="/usr/local/nvidia/lib:/usr/local/nvidia/lib64:${LD_LIBRARY_PATH}"
 EOF
@@ -220,16 +218,9 @@ function install_cuda() {
       return
     fi
 
-    apt-get update -qq
-    # apt-get upgrade -yqq
     # In any case remove nouveau driver
     apt-get remove -yqq --purge libdrm-nouveau*
     # Here we also need to blacklist nouveau
-    apt-get install -yqq --no-install-recommends \
-        git \
-        curl \
-        wget \
-        build-essential
 
     status-set maintenance "Installing CUDA"
 

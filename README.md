@@ -23,4 +23,5 @@ The following states are set by this layer:
 ## Usage
 
 To use this layer, include it in a charm and deploy the charm to a cloud
-instance with Nvidia GPUs, e.g. "instance-type=p2.xlarge" on AWS.
+instance with Nvidia GPUs, e.g. `instance-type=p2.xlarge` on AWS or
+`instance-type=Standard_NC6` on Azure.
