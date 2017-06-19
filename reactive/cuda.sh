@@ -5,8 +5,12 @@ source charms.reactive.sh
 
 CUDA_VERSION=$(config-get cuda-version | awk 'BEGIN{FS="-"}{print $1}')
 CUDA_SUB_VERSION=$(config-get cuda-version | awk 'BEGIN{FS="-"}{print $2}')
-SUPPORT_CUDA="$(lspci -nnk | grep -iA2 NVIDIA | wc -l)"
+LAYER_BLACKLIST_CONF="/etc/modprobe.d/blacklist-layer-nvidia-cuda.conf"
+LAYER_LD_CONF="/etc/ld.so.conf.d/layer-nvidia-cuda.conf"
+LAYER_PROFILE_CONF="/etc/profile.d/layer-nvidia-cuda.sh"
+LAYER_RC_CONF="/home/ubuntu/.bashrc"
 ROOT_URL="http://developer.download.nvidia.com/compute/cuda/repos"
+SUPPORT_CUDA="$(lspci -nnk | grep -iA2 NVIDIA | wc -l)"
 
 #####################################################################
 #
@@ -55,12 +59,43 @@ esac
 
 #####################################################################
 #
+# Handle prerequisite steps
+#
+#####################################################################
+
+function all::all::prereqs() {
+    # Blacklist the nouveau module, which conflicts with nvidia.
+    # NB: do not remove nouveau pkgs because of the many x11/openjdk deps. For
+    # example, removing libdrm-nouveau* also removes openjdk-8-[jre|jdk].
+    #   BAD: apt-get remove -yqq --purge libdrm-nouveau*
+    #        apt-get -yqq autoremove
+    #   GOOD: unload and blacklist the module
+    juju-log "Blacklisting nouveau module"
+    modprobe --remove nouveau || \
+        juju-log "No nouveau module was found. No modprobe action is needed."
+    cat > ${LAYER_BLACKLIST_CONF} <<EOF
+blacklist nouveau
+blacklist lbm-nouveau
+options nouveau modeset=0
+alias nouveau off
+alias lbm-nouveau off
+EOF
+    # update the initramfs since we altered our module blacklist
+    update-initramfs -u
+
+    juju-log "Installing linux-image-extra"
+    # some kernels do not have an -extra subpackage; proceed anyway
+    apt-get install -yqq  linux-image-extra-`uname -r` || \
+        juju-log "linux-image-extra-`uname -r` not available. Skipping"
+}
+
+#####################################################################
+#
 # Install nvidia driver per architecture
 #
 #####################################################################
 
 function all:all:install_nvidia_driver() {
-
     apt-get remove -yqq --purge nvidia-* libcuda1-*
     apt-get install -yqq --no-install-recommends \
         nvidia-375 \
@@ -156,45 +191,72 @@ function xenial::ppc64le::install_cuda() {
 #####################################################################
 
 function all::all::add_cuda_path() {
+    # Create required symlinks
     ln -sf "/usr/local/cuda-$CUDA_VERSION" "/usr/local/cuda"
+    # NB: fix "cannot find -lnvcuvid" when linking cuda programs
+    # see: https://devtalk.nvidia.com/default/topic/769578/cuda-setup-and-installation/cuda-6-5-cannot-find-lnvcuvid/2
+    [ ! -f /usr/lib/libnvcuvid.so.1 ] && ln -s /usr/lib/nvidia-375/libnvcuvid.so.1 /usr/lib/libnvcuvid.so.1
+    [ ! -f /usr/lib/libnvcuvid.so ] && ln -s /usr/lib/nvidia-375/libnvcuvid.so /usr/lib/libnvcuvid.so
+
+    # Return the given path if it's a valid directory; empty string if not.
+    find_path() {
+        # NB: the -H treats $1 as a dir even if it's a symlink
+        find -H $1 -maxdepth 0 -type d -print 2>/dev/null || echo ""
+    }
+    CUDA_BIN=$(find_path "/usr/local/cuda/bin")
+    CUDA_32=$(find_path "/usr/local/cuda/lib")
+    CUDA_64=$(find_path "/usr/local/cuda/lib64")
+    NVIDIA_BIN=$(find_path "/usr/local/nvidia/bin")
+    NVIDIA_32=$(find_path "/usr/local/nvidia/lib")
+    NVIDIA_64=$(find_path "/usr/local/nvidia/lib64")
+
+    # Create path strings with colon separator if paths are not empty. This
+    # uses param substitution of the form ${var:+alt_text}.
+    BIN_PATH=${CUDA_BIN:+$CUDA_BIN:}${NVIDIA_BIN:+$NVIDIA_BIN:}
+    LD_PATH=${CUDA_32:+$CUDA_32:}${CUDA_64:+$CUDA_64:}${NVIDIA_32:+$NVIDIA_32:}${NVIDIA_64:+$NVIDIA_64:}
 
     # Configuring libraries
-    cat > /etc/ld.so.conf.d/cuda.conf << EOF
-/usr/local/cuda/lib
-/usr/local/cuda/lib64
-EOF
-
-    [ -d "/usr/local/nvidia" ] && cat > /etc/ld.so.conf.d/nvidia.conf << EOF
-/usr/local/nvidia/lib
-/usr/local/nvidia/lib64
-EOF
-
+    true > ${LAYER_LD_CONF}
+    [ -n "${CUDA_32}" ] && echo ${CUDA_32} >> ${LAYER_LD_CONF}
+    [ -n "${CUDA_64}" ] && echo ${CUDA_64} >> ${LAYER_LD_CONF}
+    [ -n "${NVIDIA_32}" ] && echo ${NVIDIA_32} >> ${LAYER_LD_CONF}
+    [ -n "${NVIDIA_64}" ] && echo ${NVIDIA_64} >> ${LAYER_LD_CONF}
     ldconfig
 
-    cat > /etc/profile.d/cuda.sh << EOF
-export PATH=/usr/local/cuda/bin:${PATH}
-export LD_LIBRARY_PATH="/usr/local/cuda/lib64:/usr/local/cuda/lib:${LD_LIBRARY_PATH}"
-EOF
+    # Configuring system profile paths
+    true > ${LAYER_PROFILE_CONF}
+    echo "export PATH=\"${BIN_PATH}\${PATH}\"" >> ${LAYER_PROFILE_CONF}
+    echo "export LD_LIBRARY_PATH=\"${LD_PATH}\${LD_LIBRARY_PATH}\"" >> ${LAYER_PROFILE_CONF}
 
-    [ -d "/usr/local/nvidia" ] && cat > /etc/profile.d/nvidia.sh << EOF
-export PATH=/usr/local/nvidia/bin:${PATH}
-export LD_LIBRARY_PATH="/usr/local/nvidia/lib:/usr/local/nvidia/lib64:${LD_LIBRARY_PATH}"
-EOF
-
-    echo "export PATH=\"/usr/local/cuda/bin:/usr/local/nvidia/bin:${PATH}\"" | tee -a ${HOME}/.bashrc
-    echo "export LD_LIBRARY_PATH=\"/usr/local/cuda/lib64:/usr/local/cuda/lib:/usr/local/nvidia/lib:/usr/local/nvidia/lib64:${LD_LIBRARY_PATH}\"" | tee -a ${HOME}/.bashrc
-
-    export PATH="/usr/local/cuda/bin:/usr/local/nvidia/bin:${PATH}"
-
-    # fix "cannot find -lnvcuvid" when linking cuda programs
-    # see: https://devtalk.nvidia.com/default/topic/769578/cuda-setup-and-installation/cuda-6-5-cannot-find-lnvcuvid/2
-    if [ ! -f /usr/lib/libnvcuvid.so.1 ]; then
-        ln -s /usr/lib/nvidia-375/libnvcuvid.so.1 /usr/lib/libnvcuvid.so.1
-    fi
-    if [ ! -f /usr/lib/libnvcuvid.so ]; then
-        ln -s /usr/lib/nvidia-375/libnvcuvid.so /usr/lib/libnvcuvid.so
-    fi
+    # Configuring user paths with a comment to ease removal if necessary
+    echo "export PATH=\"${BIN_PATH}\${PATH}\" # layer-nvidia-cuda" >> ${LAYER_RC_CONF}
+    echo "export LD_LIBRARY_PATH=\"${LD_PATH}\${LD_LIBRARY_PATH}\" # layer-nvidia-cuda" >> ${LAYER_RC_CONF}
 }
+
+#####################################################################
+#
+# Remove CUDA configuration
+#
+#####################################################################
+
+function all::all::remove_cuda_config() {
+    # remove system config files created by this layer
+    [ -f ${LAYER_BLACKLIST_CONF} ] && rm -f ${LAYER_BLACKLIST_CONF}
+    [ -f ${LAYER_LD_CONF} ] && rm -f ${LAYER_LD_CONF}
+    [ -f ${LAYER_PROFILE_CONF} ] && rm -f ${LAYER_PROFILE_CONF}
+
+    # remove user config updated by this layer
+    [ -f ${LAYER_RC_CONF} ] && sed -i '/layer-nvidia-cuda/d' ${LAYER_RC_CONF}
+
+    # update the initramfs since we altered our module blacklist
+    update-initramfs -u
+}
+
+#####################################################################
+#
+# Reactive Handlers
+#
+#####################################################################
 
 @when_not 'cuda.supported'
 function check_cuda_support() {
@@ -211,39 +273,51 @@ function check_cuda_support() {
 @when 'cuda.supported'
 @when_not 'cuda.installed'
 function install_cuda() {
-
+    # Ensure the user wants cuda installed
     INSTALL=$(config-get install-cuda)
     if [ $INSTALL = False ]; then
       juju-log "Skip cuda installation"
       return
     fi
 
-    # In any case remove nouveau driver
-    apt-get remove -yqq --purge libdrm-nouveau*
-    # Here we also need to blacklist nouveau
-
     status-set maintenance "Installing CUDA"
-
-    # This is a hack as for some reason this package fails
-    dpkg --remove --force-remove-reinstreq grub-ieee1275 || juju-log "not installed yet, forcing not to install"
-    apt-get -yqq autoremove
-
-    juju-log "Installing common dependencies"
-    # latest kernel doesn't have image-extra so we try only
-    apt-get install -yqq  linux-image-extra-`uname -r` \
-        || juju-log "linux-image-extra-`uname -r` not available. Skipping"
+    all::all::prereqs
 
     # Install driver only on bare metal
-    [ "${LXC_CMD}" = "0" ] && \
-        ${UBUNTU_CODENAME}::${ARCH}::install_nvidia_driver || \
-        juju-log "Running in a container. No need for the nVidia Driver"
-
+    if [ "${LXC_CMD}" = "0" ]; then
+        juju-log "Installing the nVidia driver"
+        ${UBUNTU_CODENAME}::${ARCH}::install_nvidia_driver
+    else
+        juju-log "Running in a container. No need for the nVidia driver"
+    fi
 
     ${UBUNTU_CODENAME}::${ARCH}::install_openblas
     ${UBUNTU_CODENAME}::${ARCH}::install_cuda
     all::all::add_cuda_path
 
+    status-set active "CUDA Installed"
     charms.reactive set_state 'cuda.installed'
+}
+
+@when 'cuda.installed'
+@when 'config.changed.cuda-version'
+function config_cuda_version() {
+    # Remove config and reinstall with new cuda-repo version.
+    juju-log "Reinstalling with new CUDA version"
+    all::all::remove_cuda_config
+    install_cuda
+}
+
+@when 'cuda.installed'
+@when 'config.changed.install-cuda'
+function config_cuda_install() {
+    # Remove config if user sets install-cuda to false
+    INSTALL=$(config-get install-cuda)
+    if [ $INSTALL = False ]; then
+        juju-log "Removing cuda configuration"
+        all::all::remove_cuda_config
+        charms.reactive remove_state 'cuda.installed'
+    fi
 }
 
 reactive_handler_main
