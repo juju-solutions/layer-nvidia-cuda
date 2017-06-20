@@ -55,6 +55,38 @@ esac
 
 #####################################################################
 #
+# Handle prerequisite steps
+#
+#####################################################################
+
+function all::all::prereqs() {
+    # Blacklist the nouveau module, which conflicts with nvidia.
+    # NB: do not remove nouveau pkgs because of the many x11/openjdk deps. For
+    # example, removing libdrm-nouveau* also removes openjdk-8-[jre|jdk].
+    #   BAD: apt-get remove -yqq --purge libdrm-nouveau*
+    #        apt-get -yqq autoremove
+    #   GOOD: unload and blacklist the module
+    juju-log "Blacklisting nouveau module"
+    modprobe --remove nouveau || \
+        juju-log "No nouveau module was found. No modprobe action is needed."
+    cat > /etc/modprobe.d/blacklist-layer-nvidia-cuda.conf <<EOF
+blacklist nouveau
+blacklist lbm-nouveau
+options nouveau modeset=0
+alias nouveau off
+alias lbm-nouveau off
+EOF
+    # update the initramfs since we altered our module blacklist
+    update-initramfs -u
+
+    juju-log "Installing linux-image-extra"
+    # some kernels do not have an -extra subpackage; proceed anyway
+    apt-get install -yqq  linux-image-extra-`uname -r` || \
+        juju-log "linux-image-extra-`uname -r` not available. Skipping"
+}
+
+#####################################################################
+#
 # Install nvidia driver per architecture
 #
 #####################################################################
@@ -218,31 +250,22 @@ function install_cuda() {
       return
     fi
 
-    # In any case remove nouveau driver
-    apt-get remove -yqq --purge libdrm-nouveau*
-    # Here we also need to blacklist nouveau
-
     status-set maintenance "Installing CUDA"
-
-    # This is a hack as for some reason this package fails
-    dpkg --remove --force-remove-reinstreq grub-ieee1275 || juju-log "not installed yet, forcing not to install"
-    apt-get -yqq autoremove
-
-    juju-log "Installing common dependencies"
-    # latest kernel doesn't have image-extra so we try only
-    apt-get install -yqq  linux-image-extra-`uname -r` \
-        || juju-log "linux-image-extra-`uname -r` not available. Skipping"
+    all::all::prereqs
 
     # Install driver only on bare metal
-    [ "${LXC_CMD}" = "0" ] && \
-        ${UBUNTU_CODENAME}::${ARCH}::install_nvidia_driver || \
-        juju-log "Running in a container. No need for the nVidia Driver"
-
+    if [ "${LXC_CMD}" = "0" ]; then
+        juju-log "Installing the nVidia driver"
+        ${UBUNTU_CODENAME}::${ARCH}::install_nvidia_driver
+    else
+        juju-log "Running in a container. No need for the nVidia driver"
+    fi
 
     ${UBUNTU_CODENAME}::${ARCH}::install_openblas
     ${UBUNTU_CODENAME}::${ARCH}::install_cuda
     all::all::add_cuda_path
 
+    status-set active "CUDA Installed"
     charms.reactive set_state 'cuda.installed'
 }
 
