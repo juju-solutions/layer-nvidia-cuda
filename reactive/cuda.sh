@@ -308,7 +308,9 @@ function install_cuda() {
 @when 'config.changed.cuda-version'
 function config_cuda_version() {
     # Remove config and reinstall if a new cuda-repo version is configured
-    if ! dpkg -l cuda-repo 2>/dev/null | grep -q "${CUDA_VERSION}"; then
+    if dpkg -l cuda-repo 2>/dev/null | grep -q "${CUDA_VERSION}"; then
+        juju-log "cuda-repo-${CUDA_VERSION} is already installed"
+    else
         juju-log "Reinstalling with new CUDA version"
         all::all::remove_cuda_config
         install_cuda
