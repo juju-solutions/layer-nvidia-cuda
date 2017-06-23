@@ -5,6 +5,7 @@ source charms.reactive.sh
 
 CUDA_VERSION=$(config-get cuda-version | awk 'BEGIN{FS="-"}{print $1}')
 CUDA_SUB_VERSION=$(config-get cuda-version | awk 'BEGIN{FS="-"}{print $2}')
+LAYER_BLACKLIST_CONF="/etc/modprobe.d/blacklist-layer-nvidia-cuda.conf"
 LAYER_LD_CONF="/etc/ld.so.conf.d/layer-nvidia-cuda.conf"
 LAYER_PROFILE_CONF="/etc/profile.d/layer-nvidia-cuda.sh"
 LAYER_RC_CONF="/home/ubuntu/.bashrc"
@@ -72,7 +73,7 @@ function all::all::prereqs() {
     juju-log "Blacklisting nouveau module"
     modprobe --remove nouveau || \
         juju-log "No nouveau module was found. No modprobe action is needed."
-    cat > /etc/modprobe.d/blacklist-layer-nvidia-cuda.conf <<EOF
+    cat > ${LAYER_BLACKLIST_CONF} <<EOF
 blacklist nouveau
 blacklist lbm-nouveau
 options nouveau modeset=0
@@ -95,7 +96,6 @@ EOF
 #####################################################################
 
 function all:all:install_nvidia_driver() {
-
     apt-get remove -yqq --purge nvidia-* libcuda1-*
     apt-get install -yqq --no-install-recommends \
         nvidia-375 \
@@ -238,6 +238,31 @@ function all::all::add_cuda_path() {
     fi
 }
 
+#####################################################################
+#
+# Remove CUDA configuration
+#
+#####################################################################
+
+function all::all::remove_cuda_config() {
+    # remove system config files created by this layer
+    [ -f ${LAYER_BLACKLIST_CONF} ] && rm -f ${LAYER_BLACKLIST_CONF}
+    [ -f ${LAYER_LD_CONF} ] && rm -f ${LAYER_LD_CONF}
+    [ -f ${LAYER_PROFILE_CONF} ] && rm -f ${LAYER_PROFILE_CONF}
+
+    # remove user config updated by this layer
+    [ -f ${LAYER_RC_CONF} ] && sed -i '/layer-nvidia-cuda/d' ${LAYER_RC_CONF}
+
+    # update the initramfs since we altered our module blacklist
+    update-initramfs -u
+}
+
+#####################################################################
+#
+# Reactive Handlers
+#
+#####################################################################
+
 @when_not 'cuda.supported'
 function check_cuda_support() {
     case "${SUPPORT_CUDA}" in
@@ -253,7 +278,7 @@ function check_cuda_support() {
 @when 'cuda.supported'
 @when_not 'cuda.installed'
 function install_cuda() {
-
+    # Return if we're configured to skip installation
     INSTALL=$(config-get install-cuda)
     if [ $INSTALL = False ]; then
       juju-log "Skip cuda installation"
@@ -277,6 +302,31 @@ function install_cuda() {
 
     status-set active "CUDA Installed"
     charms.reactive set_state 'cuda.installed'
+}
+
+@when 'cuda.installed'
+@when 'config.changed.cuda-version'
+function config_cuda_version() {
+    # Remove config and reinstall if a new cuda-repo version is configured
+    if dpkg -l cuda-repo-* 2>/dev/null | grep -q "${CUDA_VERSION}"; then
+        juju-log "cuda-repo-${CUDA_VERSION} is already installed"
+    else
+        juju-log "Reinstalling with new CUDA version"
+        all::all::remove_cuda_config
+        install_cuda
+    fi
+}
+
+@when 'cuda.installed'
+@when 'config.changed.install-cuda'
+function config_cuda_install() {
+    # Remove config if user sets install-cuda to false
+    INSTALL=$(config-get install-cuda)
+    if [ $INSTALL = False ]; then
+        juju-log "Removing CUDA configuration"
+        all::all::remove_cuda_config
+        charms.reactive remove_state 'cuda.installed'
+    fi
 }
 
 reactive_handler_main
