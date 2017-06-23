@@ -3,7 +3,7 @@ options:
     type: string
     default: "8.0.61-1"
     description: |
-      The version of CUDA to be installed.
+      The cuda-repo package version to install.
   install-cuda:
     type: boolean
     default: True
