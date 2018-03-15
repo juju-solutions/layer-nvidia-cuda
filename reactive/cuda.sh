@@ -96,7 +96,14 @@ EOF
 #####################################################################
 
 function all:all:install_nvidia_driver() {
-    apt-get remove -yqq --purge nvidia-* libcuda1-*
+    ##remove any nvidia-* or libcuda1-* packages that aren't held
+    ## the nvidia-docker binary needs to held to resist this
+    ## but the awk means apt will play nicely with that
+    PCKGS=`dpkg -l | awk '$2~/^nvidia-/|| $2~/^libcuda1-/{if($1!~/^h/){printf " "$2}}'`
+    if [ -n "$PCKGS" ]; then
+        juju-log "removing $PCKGS"
+        apt-get remove --ignore-hold -yqq --purge $PCKGS
+    fi
     apt-get install -yqq --no-install-recommends \
         nvidia-375 \
         nvidia-375-dev \
