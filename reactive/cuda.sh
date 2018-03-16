@@ -238,10 +238,10 @@ function all::all::add_cuda_path() {
     # NB: fix "cannot find -lnvcuvid" when linking cuda programs
     # see: https://devtalk.nvidia.com/default/topic/769578/cuda-setup-and-installation/cuda-6-5-cannot-find-lnvcuvid/2
     if [ ! -f /usr/lib/libnvcuvid.so.1 ]; then
-        ln -s /usr/lib/nvidia-375/libnvcuvid.so.1 /usr/lib/libnvcuvid.so.1
+        ln -s /usr/lib/nvidia-*/libnvcuvid.so.1 /usr/lib/libnvcuvid.so.1
     fi
     if [ ! -f /usr/lib/libnvcuvid.so ]; then
-        ln -s /usr/lib/nvidia-375/libnvcuvid.so /usr/lib/libnvcuvid.so
+        ln -s /usr/lib/nvidia-*/libnvcuvid.so /usr/lib/libnvcuvid.so
     fi
 }
 
