@@ -1,11 +1,11 @@
 options:
   cuda-version:
     type: string
-    default: "8.0.61-1"
+    default: "9.1.85-1"
     description: |
       The cuda-repo package version to install.
   install-cuda:
     type: boolean
     default: True
     description: |
-      Install the CUDA binaries if capable hardware is present.
+      Install the CUDA drivers if capable hardware is present.
