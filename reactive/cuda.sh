@@ -12,6 +12,10 @@ LAYER_RC_CONF="/home/ubuntu/.bashrc"
 ROOT_URL="http://developer.download.nvidia.com/compute/cuda/repos"
 SUPPORT_CUDA="$(lspci -nnk | grep -iA2 NVIDIA | wc -l)"
 
+# translate our cuda major.minor.patch-revision into the cuda meta package name
+# eg: 9.1.85-1 becomes 9-1
+CUDA_META_VERSION=$(config-get cuda-version | awk 'BEGIN{FS="."; OFS="-"}{print $1, $2}')
+
 #####################################################################
 #
 # Basic Functions
@@ -42,11 +46,13 @@ esac
 case "$(arch)" in
     "x86_64" | "amd64" )
         ARCH="x86_64"
+        REPO_KEY="${ROOT_URL}/${UBUNTU_VERSION}/x86_64/7fa2af80.pub"
         REPO_PKG="cuda-repo-${UBUNTU_VERSION}_${CUDA_VERSION}-${CUDA_SUB_VERSION}_amd64.deb"
         REPO_URL="${ROOT_URL}/${UBUNTU_VERSION}/x86_64/${REPO_PKG}"
     ;;
     "ppc64le" | "ppc64el" )
         ARCH="ppc64le"
+        REPO_KEY="${ROOT_URL}/${UBUNTU_VERSION}/ppc64el/7fa2af80.pub"
         REPO_PKG="cuda-repo-${UBUNTU_VERSION}_${CUDA_VERSION}-${CUDA_SUB_VERSION}_ppc64el.deb"
         REPO_URL="${ROOT_URL}/${UBUNTU_VERSION}/ppc64el/${REPO_PKG}"
     ;;
@@ -91,11 +97,11 @@ EOF
 
 #####################################################################
 #
-# Install nvidia driver per architecture
+# Purge nvidia packages per architecture
 #
 #####################################################################
 
-function all:all:install_nvidia_driver() {
+function all:all:purge_nvidia_driver() {
     ##remove any nvidia-* or libcuda1-* packages that aren't held
     ## the nvidia-docker binary needs to held to resist this
     ## but the awk means apt will play nicely with that
@@ -104,25 +110,21 @@ function all:all:install_nvidia_driver() {
         juju-log "removing $PCKGS"
         apt-get remove --ignore-hold -yqq --purge $PCKGS
     fi
-    apt-get install -yqq --no-install-recommends \
-        nvidia-375 \
-        nvidia-375-dev \
-        libcuda1-375
 }
 
-function trusty::x86_64::install_nvidia_driver() {
-    all:all:install_nvidia_driver
+function trusty::x86_64::purge_nvidia_driver() {
+    all:all:purge_nvidia_driver
 }
 
-function xenial::x86_64::install_nvidia_driver() {
-    all:all:install_nvidia_driver
+function xenial::x86_64::purge_nvidia_driver() {
+    all:all:purge_nvidia_driver
 }
 
-function trusty::ppc64le::install_nvidia_driver() {
+function trusty::ppc64le::purge_nvidia_driver() {
     bash::lib::log warn "This task is handled by the cuda installer"
 }
 
-function xenial::ppc64le::install_nvidia_driver() {
+function xenial::ppc64le::purge_nvidia_driver() {
     bash::lib::log info "This task is handled by the cuda installer"
 }
 
@@ -169,9 +171,10 @@ function all::all::install_cuda() {
     [ -f ${REPO_PKG} ] && rm -f ${REPO_PKG}
     wget ${REPO_URL}
     dpkg -i /tmp/${REPO_PKG}
+    apt-key adv --fetch-keys ${REPO_KEY}
     apt-get update -qq && \
     apt-get install -yqq --allow-downgrades --allow-remove-essential --allow-change-held-packages --no-install-recommends \
-        cuda
+        cuda-${CUDA_META_VERSION}
     rm -f ${REPO_PKG}
 }
 
@@ -300,7 +303,7 @@ function install_cuda() {
     # Install driver only on bare metal
     if [ "${LXC_CMD}" = "0" ]; then
         juju-log "Installing the nVidia driver"
-        ${UBUNTU_CODENAME}::${ARCH}::install_nvidia_driver
+        ${UBUNTU_CODENAME}::${ARCH}::purge_nvidia_driver
     else
         juju-log "Running in a container. No need for the nVidia driver"
     fi
