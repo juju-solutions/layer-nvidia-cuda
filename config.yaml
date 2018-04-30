@@ -1,9 +1,10 @@
 options:
   cuda-version:
     type: string
-    default: "8.0.61-1"
+    default: "9.1.85-1"
     description: |
-      The cuda-repo package version to install.
+      Version of the cuda-repo deb to install. Valid options can be found at:
+      http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1604/x86_64
   install-cuda:
     type: boolean
     default: True

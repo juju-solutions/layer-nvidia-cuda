@@ -1,7 +1,7 @@
 # Nvidia CUDA Layer
 
-Installs CUDA 8.0.61-1 and Nvidia 375 drivers when supported GPU hardware is
-detected.
+Installs the configured CUDA version with Nvidia drivers when supported GPU
+hardware is detected.
 
 
 # States
@@ -34,13 +34,13 @@ The following runtime configuration options are available in this layer:
 
 * `cuda-version`
 
-  The `cuda-repo` package version to install. Defaults to `8.0.61-1`.
+  The `cuda-repo` package version to install. Defaults to `9.1.85-1`.
 
-      juju config <charm> cuda-version=8.0.61-1
+      juju config <charm> cuda-version=9.1.85-1
 
-  >**Note**: Regardless of this setting, the `cuda` meta package will install
-  the latest dependencies available in the repository. It is therefore
-  recommended to set this to the most recent `cuda-repo` version.
+  >**Note**: This layer constructs a `major-minor` string from this value and
+  installs the corresponding `cuda-x-y` meta package (`cuda-9-1` by default).
+  This package will install the latest available dependencies in this series.
 
 * `install-cuda`
 
