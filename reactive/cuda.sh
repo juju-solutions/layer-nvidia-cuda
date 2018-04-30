@@ -30,11 +30,9 @@ UBUNTU_CODENAME="$(bash::lib::get_ubuntu_codename)"
 
 case "${UBUNTU_CODENAME}" in
     "trusty" )
-        LXC_CMD="$(running-in-container | grep lxc | wc -l)"
         UBUNTU_VERSION=ubuntu1404
     ;;
     "xenial" )
-        LXC_CMD="$(systemd-detect-virt --container | grep lxc | wc -l)"
         UBUNTU_VERSION=ubuntu1604
     ;;
     * )
@@ -292,7 +290,7 @@ function check_cuda_support() {
 function install_cuda() {
     # Return if we're configured to skip installation
     INSTALL=$(config-get install-cuda)
-    if [ $INSTALL = False ]; then
+    if [ "${INSTALL}" = "False" ]; then
       juju-log "Skip cuda installation"
       return
     fi
@@ -300,13 +298,9 @@ function install_cuda() {
     status-set maintenance "Installing CUDA"
     all::all::prereqs
 
-    # Install driver only on bare metal
-    if [ "${LXC_CMD}" = "0" ]; then
-        juju-log "Installing the nVidia driver"
-        ${UBUNTU_CODENAME}::${ARCH}::purge_nvidia_driver
-    else
-        juju-log "Running in a container. No need for the nVidia driver"
-    fi
+    # Purge existing libcuda/nvidia packages
+    juju-log "Purging any existing libcuda/nvidia packages"
+    ${UBUNTU_CODENAME}::${ARCH}::purge_nvidia_driver
 
     ${UBUNTU_CODENAME}::${ARCH}::install_openblas
     ${UBUNTU_CODENAME}::${ARCH}::install_cuda
@@ -334,7 +328,7 @@ function config_cuda_version() {
 function config_cuda_install() {
     # Remove config if user sets install-cuda to false
     INSTALL=$(config-get install-cuda)
-    if [ $INSTALL = False ]; then
+    if [ "${INSTALL}" = "False" ]; then
         juju-log "Removing CUDA configuration"
         all::all::remove_cuda_config
         charms.reactive remove_state 'cuda.installed'
